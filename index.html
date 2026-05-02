@@ -5,18 +5,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Учет финансов</title>
-  
-  <!-- Подключение Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Подключение иконок Phosphor Icons (вместо Lucide) -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  
-  <!-- Подключение React и ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- Подключение Babel для компиляции JSX на лету -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans antialiased overflow-hidden h-screen w-screen">
@@ -38,22 +30,14 @@
       "Форс мажор"
     ];
 
-    const COLORS = [
-      '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', 
-      '#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#ec4899'
-    ];
+    const COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e', '#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#ec4899'];
 
     function App() {
       const [activeTab, setActiveTab] = useState('home');
-      
       const [data, setData] = useState(() => {
         const saved = localStorage.getItem('finance_data');
         if (saved) {
-          try {
-            return JSON.parse(saved);
-          } catch (e) {
-            console.error("Data parse error");
-          }
+          try { return JSON.parse(saved); } catch (e) { console.error("Parse error"); }
         }
         return {
           transactions: [],
@@ -74,14 +58,10 @@
       };
 
       const deleteTransaction = (id) => {
-        setData(prev => ({
-          ...prev,
-          transactions: prev.transactions.filter(t => t.id !== id)
-        }));
+        setData(prev => ({ ...prev, transactions: prev.transactions.filter(t => t.id !== id) }));
       };
 
       const currentMonth = new Date().toISOString().slice(0, 7);
-      
       const totalIncome = data.transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
       const totalExpense = data.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
       const totalToPiggy = data.transactions.filter(t => t.type === 'savings_deposit').reduce((sum, t) => sum + t.amount, 0);
@@ -90,27 +70,20 @@
       const availableBalance = totalIncome - totalExpense - totalToPiggy;
       const piggyBalance = totalToPiggy - totalFromPiggy;
 
-      const renderTab = () => {
-        switch(activeTab) {
-          case 'home': return <Dashboard data={data} availableBalance={availableBalance} piggyBalance={piggyBalance} deleteTransaction={deleteTransaction} />;
-          case 'add': return <AddTransaction addTransaction={addTransaction} goals={data.goals} goHome={() => setActiveTab('home')} />;
-          case 'limits': return <LimitsManager data={data} setData={setData} currentMonth={currentMonth} />;
-          case 'piggy': return <PiggyBankView data={data} setData={setData} piggyBalance={piggyBalance} />;
-          case 'stats': return <StatsView data={data} />;
-          case 'settings': return <SettingsView data={data} setData={setData} />;
-          default: return <Dashboard data={data} availableBalance={availableBalance} piggyBalance={piggyBalance} />;
-        }
-      };
-
       return (
-        <div className="flex flex-col h-full bg-gray-50 text-gray-900">
+        <div className="flex flex-col h-full bg-gray-50">
           <header className="bg-white shadow-sm px-4 py-3 flex justify-between items-center z-10">
             <h1 className="text-xl font-bold text-gray-800">Учет финансов</h1>
             <div className="text-sm font-medium text-gray-500">{new Date().toLocaleDateString('ru-RU', {day: 'numeric', month: 'long'})}</div>
           </header>
           
           <main className="flex-1 overflow-y-auto pb-20">
-            {renderTab()}
+            {activeTab === 'home' && <Dashboard data={data} availableBalance={availableBalance} piggyBalance={piggyBalance} deleteTransaction={deleteTransaction} />}
+            {activeTab === 'add' && <AddTransaction addTransaction={addTransaction} goals={data.goals} goHome={() => setActiveTab('home')} />}
+            {activeTab === 'limits' && <LimitsManager data={data} setData={setData} currentMonth={currentMonth} />}
+            {activeTab === 'piggy' && <PiggyBankView data={data} setData={setData} piggyBalance={piggyBalance} />}
+            {activeTab === 'stats' && <StatsView data={data} />}
+            {activeTab === 'settings' && <SettingsView data={data} setData={setData} />}
           </main>
 
           <nav className="bg-white border-t border-gray-200 fixed bottom-0 w-full flex justify-around p-2 z-20 pb-safe">
@@ -119,18 +92,15 @@
             <NavBtn id="add" icon="ph-plus-circle" iconClass="text-[28px] text-blue-600" label="Добавить" active={activeTab} set={setActiveTab} />
             <NavBtn id="piggy" icon="ph-piggy-bank" label="Копилка" active={activeTab} set={setActiveTab} />
             <NavBtn id="stats" icon="ph-chart-pie-slice" label="Отчеты" active={activeTab} set={setActiveTab} />
-            <NavBtn id="settings" icon="ph-gear" label="Настройки" active={activeTab} set={setActiveTab} hidden />
           </nav>
         </div>
       );
     }
 
-    function NavBtn({ id, icon, iconClass, label, active, set, hidden }) {
-      if(hidden && active !== id) return null;
-      const baseIconClass = iconClass || "text-2xl";
+    function NavBtn({ id, icon, iconClass, label, active, set }) {
       return (
         <button onClick={() => set(id)} className={`flex flex-col items-center p-2 transition-colors ${active === id ? 'text-blue-600' : 'text-gray-400'}`}>
-          <i className={`ph ${icon} ${baseIconClass}`}></i>
+          <i className={`ph ${icon} ${iconClass || "text-2xl"}`}></i>
           <span className="text-[10px] mt-1">{label}</span>
         </button>
       );
@@ -143,45 +113,27 @@
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
               <div className="text-sm text-gray-500 mb-1">Доступно</div>
-              <div className={`text-2xl font-bold ${availableBalance < 0 ? 'text-red-500' : 'text-gray-800'}`}>
-                {availableBalance.toLocaleString()} ₽
-              </div>
+              <div className={`text-2xl font-bold ${availableBalance < 0 ? 'text-red-500' : 'text-gray-800'}`}>{availableBalance.toLocaleString()} ₽</div>
             </div>
             <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl shadow-sm text-white">
               <div className="text-sm text-blue-100 mb-1">В копилке</div>
-              <div className="text-2xl font-bold">
-                {piggyBalance.toLocaleString()} ₽
-              </div>
+              <div className="text-2xl font-bold">{piggyBalance.toLocaleString()} ₽</div>
             </div>
           </div>
-
-          <div>
-            <h2 className="text-lg font-bold mb-3">Последние операции</h2>
-            {recent.length === 0 ? (
-              <div className="text-center text-gray-400 py-8">Нет операций</div>
-            ) : (
-              <div className="space-y-3">
-                {recent.map(t => (
-                  <div key={t.id} className="bg-white p-3 rounded-xl shadow-sm border border-gray-50 flex justify-between items-center">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-800">
-                        {t.type === 'income' ? 'Доход' : t.type === 'expense' ? t.category : t.type === 'savings_deposit' ? 'Пополнение копилки' : 'Изъятие из копилки'}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-0.5">{new Date(t.date).toLocaleDateString('ru-RU')} • {t.note || 'Без описания'}</div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`font-bold ${
-                        t.type === 'income' || t.type === 'savings_deposit' ? 'text-green-500' : 
-                        t.type === 'expense' ? 'text-gray-800' : 'text-purple-600'
-                      }`}>
-                        {t.type === 'income' || t.type === 'savings_deposit' ? '+' : '-'}{t.amount} ₽
-                      </div>
-                      <button onClick={() => deleteTransaction(t.id)} className="text-red-400 p-1"><i className="ph ph-trash text-base"></i></button>
-                    </div>
-                  </div>
-                ))}
+          <div className="space-y-3">
+            <h2 className="text-lg font-bold">Последние операции</h2>
+            {recent.map(t => (
+              <div key={t.id} className="bg-white p-3 rounded-xl shadow-sm flex justify-between items-center">
+                <div>
+                  <div className="font-medium text-sm">{t.type === 'income' ? 'Доход' : t.category || 'Копилка'}</div>
+                  <div className="text-[10px] text-gray-400">{new Date(t.date).toLocaleDateString('ru-RU')}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold ${t.type === 'income' ? 'text-green-500' : 'text-gray-800'}`}>{t.amount} ₽</span>
+                  <button onClick={() => deleteTransaction(t.id)} className="text-red-400"><i className="ph ph-trash"></i></button>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
       );
@@ -195,201 +147,96 @@
 
       const submit = (e) => {
         e.preventDefault();
-        if(!amount || isNaN(amount) || Number(amount) <= 0) return alert('Введите корректную сумму');
-        
-        addTransaction({
-          type,
-          amount: Number(amount),
-          category: type === 'expense' ? category : null,
-          note,
-          date: new Date().toISOString()
-        });
+        if(!amount || isNaN(amount) || Number(amount) <= 0) return;
+        addTransaction({ type, amount: Number(amount), category: type === 'expense' ? category : null, note });
         goHome();
       };
 
       return (
-        <div className="p-4">
-          <div className="flex bg-gray-200 p-1 rounded-lg mb-6">
-            {[
-              {id: 'expense', label: 'Расход'}, 
-              {id: 'income', label: 'Доход'}, 
-              {id: 'savings_deposit', label: 'В копилку'},
-              {id: 'savings_withdrawal', label: 'Из копилки'}
-            ].map(t => (
-              <button 
-                key={t.id} 
-                onClick={() => setType(t.id)}
-                className={`flex-1 text-xs sm:text-sm py-2 rounded-md font-medium transition-all ${type === t.id ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}
-              >
-                {t.label}
+        <form onSubmit={submit} className="p-4 space-y-4">
+          <div className="flex bg-gray-200 p-1 rounded-lg">
+            {['expense', 'income', 'savings_deposit', 'savings_withdrawal'].map(t => (
+              <button key={t} type="button" onClick={() => setType(t)} className={`flex-1 py-2 text-[10px] font-bold rounded-md ${type === t ? 'bg-white shadow' : 'text-gray-500'}`}>
+                {t === 'expense' ? 'Расход' : t === 'income' ? 'Доход' : t === 'savings_deposit' ? 'В копилку' : 'Из копилки'}
               </button>
             ))}
           </div>
-
-          <form onSubmit={submit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Сумма (₽)</label>
-              <input 
-                type="number" 
-                value={amount} 
-                onChange={e => setAmount(e.target.value)}
-                className="w-full p-3 bg-white border border-gray-300 rounded-xl text-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="0"
-                inputMode="decimal"
-              />
-            </div>
-
-            {type === 'expense' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Категория</label>
-                <select 
-                  value={category} 
-                  onChange={e => setCategory(e.target.value)}
-                  className="w-full p-3 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-            )}
-
-            {type === 'savings_withdrawal' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">На какую цель? (Опционально)</label>
-                <select 
-                  className="w-full p-3 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                  onChange={(e) => setNote(`Цель: ${e.target.value}`)}
-                >
-                  <option value="">Без привязки к цели</option>
-                  {goals.map(g => <option key={g.id} value={g.name}>{g.name}</option>)}
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Заметка {type !== 'savings_withdrawal' && '(Опционально)'}</label>
-              <input 
-                type="text" 
-                value={note} 
-                onChange={e => setNote(e.target.value)}
-                className="w-full p-3 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Описание..."
-              />
-            </div>
-
-            <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-lg shadow-md hover:bg-blue-700 transition-colors mt-4">
-              Сохранить
-            </button>
-          </form>
-        </div>
+          <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Сумма" className="w-full p-4 bg-white border rounded-xl outline-none" inputMode="decimal" />
+          {type === 'expense' && <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-4 border rounded-xl">{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select>}
+          <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="Заметка" className="w-full p-4 border rounded-xl" />
+          <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold">Сохранить</button>
+        </form>
       );
     }
 
     function LimitsManager({ data, setData, currentMonth }) {
       const [isModalOpen, setModal] = useState(false);
-      const [fromCat, setFromCat] = useState(CATEGORIES[0]);
-      const [toCat, setToCat] = useState(CATEGORIES[1]);
-      const [amount, setAmount] = useState('');
+      const [transfer, setTransfer] = useState({ from: CATEGORIES[0], to: CATEGORIES[1], amount: '' });
 
       const monthExpenses = useMemo(() => {
-        const expenses = data.transactions.filter(t => t.type === 'expense' && t.date.startsWith(currentMonth));
         const sums = {};
         CATEGORIES.forEach(c => sums[c] = 0);
-        expenses.forEach(t => { if(sums[t.category] !== undefined) sums[t.category] += t.amount });
+        data.transactions.filter(t => t.type === 'expense' && t.date.startsWith(currentMonth)).forEach(t => { if(sums[t.category] !== undefined) sums[t.category] += t.amount });
         return sums;
       }, [data.transactions, currentMonth]);
 
-      const handleTransfer = () => {
-        const val = Number(amount);
-        if (!val || val <= 0 || fromCat === toCat) return;
-        if (data.limits[fromCat] < val) return alert('Недостаточно лимита в исходной категории');
-
-        setData(prev => ({
-          ...prev,
-          limits: {
-            ...prev.limits,
-            [fromCat]: prev.limits[fromCat] - val,
-            [toCat]: prev.limits[toCat] + val
-          }
-        }));
-        setModal(false);
-        setAmount('');
+      const updateLimit = (cat, val) => {
+        const num = val === '' ? 0 : Number(val);
+        setData(prev => ({ ...prev, limits: { ...prev.limits, [cat]: num } }));
       };
 
-      const updateLimit = (cat, val) => {
-        setData(prev => ({ ...prev, limits: { ...prev.limits, [cat]: Number(val) } }));
+      const handleTransfer = () => {
+        const val = Number(transfer.amount);
+        if (!val || val <= 0 || transfer.from === transfer.to || data.limits[transfer.from] < val) return;
+        setData(prev => ({
+          ...prev,
+          limits: { ...prev.limits, [transfer.from]: prev.limits[transfer.from] - val, [transfer.to]: prev.limits[transfer.to] + val }
+        }));
+        setModal(false);
+        setTransfer({...transfer, amount: ''});
       };
 
       return (
-        <div className="p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Лимиты (Месяц)</h2>
-            <button onClick={() => setModal(true)} className="flex items-center gap-1 text-sm bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-medium">
-              <i className="ph ph-arrows-left-right text-base"></i> Перенести
-            </button>
+        <div className="p-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold">Лимиты</h2>
+            <button onClick={() => setModal(true)} className="text-blue-600 font-bold text-sm flex items-center gap-1"><i className="ph ph-arrows-left-right"></i> Перенести</button>
           </div>
-
-          <div className="space-y-4">
-            {CATEGORIES.map(cat => {
-              const limit = data.limits[cat] || 0;
-              const spent = monthExpenses[cat] || 0;
-              const percent = limit > 0 ? Math.min(100, (spent / limit) * 100) : (spent > 0 ? 100 : 0);
-              const isOver = spent > limit && limit > 0;
-
-              return (
-                <div key={cat} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="font-medium text-gray-700">{cat}</span>
-                    <div className="flex items-center gap-2">
-                      <span className={`${isOver ? 'text-red-500 font-bold' : 'text-gray-500'}`}>{spent} /</span>
-                      <input 
-                        type="number" 
-                        value={limit} 
-                        onChange={(e) => updateLimit(cat, e.target.value)}
-                        className="w-20 text-right bg-gray-50 border border-gray-200 rounded p-1 text-sm outline-none"
-                        placeholder="Лимит"
-                      />
-                    </div>
-                  </div>
-                  <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-500 ${isOver ? 'bg-red-500' : percent > 80 ? 'bg-orange-500' : 'bg-green-500'}`}
-                      style={{ width: `${percent}%` }}
+          {CATEGORIES.map(cat => {
+            const limit = data.limits[cat] || 0;
+            const spent = monthExpenses[cat] || 0;
+            return (
+              <div key={cat} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                <div className="flex justify-between text-xs mb-2">
+                  <span className="font-bold text-gray-600">{cat}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400">{spent} /</span>
+                    <input 
+                      type="number" 
+                      value={limit === 0 ? '' : limit} 
+                      onChange={(e) => updateLimit(cat, e.target.value)}
+                      placeholder="0"
+                      className="w-20 text-right bg-blue-50 border-none rounded p-1 font-bold outline-none focus:ring-1 focus:ring-blue-300"
+                      inputMode="numeric"
                     />
                   </div>
                 </div>
-              );
-            })}
-          </div>
-
+                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div className={`h-full transition-all ${spent > limit && limit > 0 ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${limit > 0 ? Math.min(100, (spent/limit)*100) : 0}%` }} />
+                </div>
+              </div>
+            );
+          })}
           {isModalOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-xl">
-                <h3 className="font-bold text-lg">Перераспределение лимита</h3>
-                
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">Откуда забрать</label>
-                  <select value={fromCat} onChange={e=>setFromCat(e.target.value)} className="w-full p-2 border rounded-lg">
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c} ({data.limits[c]} ₽)</option>)}
-                  </select>
-                </div>
-                
-                <div className="flex justify-center text-gray-400"><i className="ph ph-arrows-left-right text-xl rotate-90"></i></div>
-                
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">Куда добавить</label>
-                  <select value={toCat} onChange={e=>setToCat(e.target.value)} className="w-full p-2 border rounded-lg">
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs text-gray-500 block mb-1">Сумма</label>
-                  <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} className="w-full p-2 border rounded-lg" placeholder="0" />
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <button onClick={() => setModal(false)} className="flex-1 py-2 bg-gray-100 rounded-lg text-gray-700">Отмена</button>
-                  <button onClick={handleTransfer} className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-medium">Перенести</button>
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl w-full p-5 space-y-4">
+                <h3 className="font-bold">Перенос лимита</h3>
+                <select value={transfer.from} onChange={e=>setTransfer({...transfer, from:e.target.value})} className="w-full p-2 border rounded-lg">{CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}</select>
+                <select value={transfer.to} onChange={e=>setTransfer({...transfer, to:e.target.value})} className="w-full p-2 border rounded-lg">{CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}</select>
+                <input type="number" value={transfer.amount} onChange={e=>setTransfer({...transfer, amount:e.target.value})} className="w-full p-2 border rounded-lg" placeholder="Сумма" />
+                <div className="flex gap-2">
+                  <button onClick={()=>setModal(false)} className="flex-1 py-2 bg-gray-100 rounded-lg">Отмена</button>
+                  <button onClick={handleTransfer} className="flex-1 py-2 bg-blue-600 text-white rounded-lg">ОК</button>
                 </div>
               </div>
             </div>
@@ -399,240 +246,69 @@
     }
 
     function PiggyBankView({ data, setData, piggyBalance }) {
-      const [newGoal, setNewGoal] = useState('');
-      const [targetAmount, setTargetAmount] = useState('');
-
-      const addGoal = () => {
-        if(!newGoal || !targetAmount) return;
-        setData(prev => ({
-          ...prev,
-          goals: [...prev.goals, { id: Date.now().toString(), name: newGoal, target: Number(targetAmount) }]
-        }));
-        setNewGoal('');
-        setTargetAmount('');
-      };
-
-      const deleteGoal = (id) => {
-        setData(prev => ({ ...prev, goals: prev.goals.filter(g => g.id !== id) }));
-      };
-
+      const [goal, setGoal] = useState({ name: '', target: '' });
       return (
         <div className="p-4 space-y-6">
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-2xl shadow-md text-white text-center">
-            <i className="ph ph-piggy-bank text-[40px] mx-auto mb-2 opacity-80 block"></i>
-            <div className="text-sm text-indigo-100 mb-1">Всего в копилке</div>
+          <div className="bg-indigo-600 p-6 rounded-2xl text-white text-center shadow-lg">
+            <i className="ph ph-piggy-bank text-4xl block mb-2 opacity-80"></i>
+            <div className="text-xs opacity-70">Всего в копилке</div>
             <div className="text-3xl font-bold">{piggyBalance.toLocaleString()} ₽</div>
           </div>
-
-          <div>
-            <h2 className="text-xl font-bold mb-4">На что копим?</h2>
-            
-            <div className="flex gap-2 mb-4">
-              <input 
-                type="text" 
-                placeholder="Название цели" 
-                className="flex-1 p-2 border rounded-lg outline-none text-sm"
-                value={newGoal} onChange={e=>setNewGoal(e.target.value)}
-              />
-              <input 
-                type="number" 
-                placeholder="Сумма" 
-                className="w-24 p-2 border rounded-lg outline-none text-sm"
-                value={targetAmount} onChange={e=>setTargetAmount(e.target.value)}
-              />
-              <button onClick={addGoal} className="bg-purple-600 text-white p-2 flex items-center justify-center rounded-lg"><i className="ph ph-plus-circle text-xl"></i></button>
+          <div className="space-y-4">
+            <h3 className="font-bold">Цели</h3>
+            <div className="flex gap-2">
+              <input type="text" placeholder="Цель" value={goal.name} onChange={e=>setGoal({...goal, name:e.target.value})} className="flex-1 p-2 border rounded-lg text-sm" />
+              <input type="number" placeholder="Сумма" value={goal.target} onChange={e=>setGoal({...goal, target:e.target.value})} className="w-24 p-2 border rounded-lg text-sm" />
+              <button onClick={()=>{ if(goal.name && goal.target) setData(prev=>({...prev, goals:[...prev.goals, {id:Date.now(), ...goal}]})); setGoal({name:'', target:''}) }} className="bg-indigo-600 text-white p-2 rounded-lg"><i className="ph ph-plus"></i></button>
             </div>
-
-            <div className="space-y-3">
-              {data.goals.length === 0 && <p className="text-gray-400 text-sm text-center">Нет активных целей</p>}
-              {data.goals.map(goal => (
-                <div key={goal.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-800">{goal.name}</div>
-                    <div className="text-sm text-gray-500">Цель: {goal.target.toLocaleString()} ₽</div>
-                  </div>
-                  <button onClick={() => deleteGoal(goal.id)} className="text-red-400 p-2"><i className="ph ph-trash text-[18px]"></i></button>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <div className="bg-blue-50 p-4 rounded-xl flex items-start gap-3 text-blue-800 text-sm">
-            <i className="ph ph-warning text-xl shrink-0 mt-0.5"></i>
-            <p>При добавлении средств "В копилку" на главном экране, они вычитаются из общих доходов. При изъятии средств "Из копилки" они учитываются как целевые расходы.</p>
+            {data.goals.map(g => (
+              <div key={g.id} className="bg-white p-3 rounded-xl border flex justify-between items-center">
+                <div><div className="font-bold text-sm">{g.name}</div><div className="text-xs text-gray-400">Надо: {g.target} ₽</div></div>
+                <button onClick={()=>setData(prev=>({...prev, goals:prev.goals.filter(x=>x.id!==g.id)}))} className="text-red-400"><i className="ph ph-trash"></i></button>
+              </div>
+            ))}
           </div>
         </div>
       );
     }
 
     function StatsView({ data }) {
-      const [period, setPeriod] = useState('month');
-
-      const getFilteredData = () => {
-        const now = new Date();
-        return data.transactions.filter(t => {
-          if (t.type !== 'expense') return false;
-          const tDate = new Date(t.date);
-          if (period === 'day') return tDate.toDateString() === now.toDateString();
-          if (period === 'week') {
-            const start = new Date(now);
-            start.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
-            start.setHours(0,0,0,0);
-            return tDate >= start;
-          }
-          if (period === 'month') return tDate.getMonth() === now.getMonth() && tDate.getFullYear() === now.getFullYear();
-          return true;
-        });
-      };
-
-      const filtered = getFilteredData();
+      const filtered = data.transactions.filter(t => t.type === 'expense');
       const total = filtered.reduce((s, t) => s + t.amount, 0);
-      
       const agg = {};
       filtered.forEach(t => { agg[t.category] = (agg[t.category] || 0) + t.amount; });
-      const chartData = Object.entries(agg)
-        .map(([name, value], i) => ({ name, value, color: COLORS[i % COLORS.length] }))
-        .sort((a, b) => b.value - a.value);
-
-      let cumulativePercent = 0;
-      const renderPieSlices = () => {
-        return chartData.map(slice => {
-          const percent = slice.value / total;
-          const dashArray = `${percent * 100} 100`;
-          const dashOffset = -cumulativePercent * 100;
-          cumulativePercent += percent;
-          
-          return (
-            <circle
-              key={slice.name}
-              cx="21" cy="21" r="15.91549430918954"
-              fill="transparent"
-              stroke={slice.color}
-              strokeWidth="6"
-              strokeDasharray={dashArray}
-              strokeDashoffset={dashOffset}
-              className="transition-all duration-500"
-            />
-          );
-        });
-      };
-
-      const renderBarChart = () => {
-        if (period !== 'week' && period !== 'month') return null;
-        
-        return (
-          <div className="mt-8">
-            <h3 className="text-sm font-bold text-gray-600 mb-4">Структура расходов</h3>
-            <div className="space-y-3">
-              {chartData.map(item => (
-                <div key={item.name}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>{item.name}</span>
-                    <span className="font-bold">{item.value.toLocaleString()} ₽</span>
-                  </div>
-                  <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${(item.value/total)*100}%`, backgroundColor: item.color }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      };
+      const chart = Object.entries(agg).sort((a,b)=>b[1]-a[1]);
 
       return (
-        <div className="p-4">
-          <div className="flex bg-gray-200 p-1 rounded-lg mb-6">
-            {[{id:'day', l:'День'}, {id:'week', l:'Неделя'}, {id:'month', l:'Месяц'}].map(p => (
-              <button 
-                key={p.id} onClick={() => setPeriod(p.id)}
-                className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all ${period === p.id ? 'bg-white shadow-sm' : 'text-gray-500'}`}
-              >
-                {p.l}
-              </button>
+        <div className="p-4 space-y-6">
+          <div className="bg-white p-6 rounded-2xl shadow-sm text-center border">
+            <div className="text-xs text-gray-400">Всего расходов</div>
+            <div className="text-3xl font-bold text-gray-800">{total.toLocaleString()} ₽</div>
+          </div>
+          <div className="space-y-3">
+            {chart.map(([name, val], i) => (
+              <div key={name}>
+                <div className="flex justify-between text-xs mb-1"><span>{name}</span><span className="font-bold">{val} ₽</span></div>
+                <div className="h-2 w-full bg-gray-100 rounded-full"><div className="h-full bg-blue-500 rounded-full" style={{ width: `${(val/total)*100}%` }} /></div>
+              </div>
             ))}
           </div>
-
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center relative overflow-hidden">
-            <div className="text-sm text-gray-500 mb-1">Расходы за период</div>
-            <div className="text-3xl font-bold text-gray-800 mb-6">{total.toLocaleString()} ₽</div>
-            
-            {total > 0 ? (
-              <div className="relative w-48 h-48 mx-auto">
-                <svg viewBox="0 0 42 42" className="w-full h-full -rotate-90 rounded-full">
-                  {renderPieSlices()}
-                </svg>
-              </div>
-            ) : (
-              <div className="py-10 text-gray-400">Нет данных для графика</div>
-            )}
-          </div>
-
-          {total > 0 && renderBarChart()}
         </div>
       );
     }
 
     function SettingsView({ data, setData }) {
-      const exportData = () => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href",     dataStr);
-        downloadAnchorNode.setAttribute("download", "finance_backup_" + new Date().toISOString().split('T')[0] + ".json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-      };
-
-      const importData = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const imported = JSON.parse(e.target.result);
-            if (imported.transactions && imported.limits) {
-              setData(imported);
-              alert('Данные успешно восстановлены!');
-            } else {
-              alert('Некорректный формат файла');
-            }
-          } catch (err) {
-            alert('Ошибка при чтении файла');
-          }
-        };
-        reader.readAsText(file);
-      };
-
-      const clearData = () => {
-        if(window.confirm('Вы уверены, что хотите УДАЛИТЬ ВСЕ ДАННЫЕ? Это действие необратимо.')) {
-          setData({ transactions: [], limits: CATEGORIES.reduce((acc, cat) => ({...acc, [cat]: 0}), {}), goals: [] });
-          localStorage.removeItem('finance_data');
-        }
-      };
-
       return (
         <div className="p-4 space-y-4">
-          <h2 className="text-xl font-bold mb-4">Управление данными</h2>
-          
-          <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm mb-6">
-            <strong>Важно:</strong> Поскольку приложение работает локально в браузере телефона, очистка кэша браузера удалит ваши финансовые записи. Регулярно делайте экспорт данных!
-          </div>
-
-          <button onClick={exportData} className="w-full flex items-center justify-center gap-2 py-4 bg-white border border-gray-200 rounded-xl font-medium shadow-sm active:bg-gray-50">
-            <i className="ph ph-download-simple text-xl"></i> Экспорт данных (Резервная копия)
-          </button>
-
-          <label className="w-full flex items-center justify-center gap-2 py-4 bg-white border border-gray-200 rounded-xl font-medium shadow-sm active:bg-gray-50 cursor-pointer">
-            <i className="ph ph-upload-simple text-xl"></i> Импорт данных (Восстановление)
-            <input type="file" accept=".json" onChange={importData} className="hidden" />
+          <button onClick={() => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+            const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", "finance.json"); dl.click();
+          }} className="w-full py-4 bg-white border rounded-xl font-bold shadow-sm">💾 Экспорт данных</button>
+          <label className="w-full py-4 bg-white border rounded-xl font-bold shadow-sm flex items-center justify-center cursor-pointer">
+            📂 Импорт данных <input type="file" className="hidden" onChange={e => {
+              const r = new FileReader(); r.onload = x => { setData(JSON.parse(x.target.result)); alert('ОК'); }; r.readAsText(e.target.files[0]);
+            }} />
           </label>
-
-          <div className="pt-8 border-t border-gray-200 mt-8">
-            <button onClick={clearData} className="w-full flex items-center justify-center gap-2 py-4 bg-red-50 text-red-600 rounded-xl font-bold active:bg-red-100 transition-colors">
-              <i className="ph ph-trash text-xl"></i> Удалить все данные
-            </button>
-          </div>
         </div>
       );
     }
