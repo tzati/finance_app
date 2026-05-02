@@ -13,10 +13,12 @@
   <style>
     .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    /* Исправление высоты для мобильных браузеров */
+    .app-container { height: 100vh; height: 100dvh; }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans antialiased overflow-hidden h-screen w-screen">
-  <div id="root" class="h-full w-full"></div>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased overflow-hidden">
+  <div id="root"></div>
 
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
@@ -40,7 +42,7 @@
               goals: parsed.goals || []
             };
           }
-        } catch (e) { console.error("Data restoration failed"); }
+        } catch (e) { console.error("Restore error"); }
         return { transactions: [], limits: CATEGORIES.reduce((acc, cat) => ({...acc, [cat]: 0}), {}), goals: [] };
       });
 
@@ -71,22 +73,24 @@
       };
 
       return (
-        <div className="flex flex-col h-full">
-          <header className="bg-white shadow-sm px-4 py-3 flex justify-between items-center shrink-0">
+        <div className="flex flex-col app-container overflow-hidden">
+          <header className="bg-white shadow-sm px-4 py-3 flex justify-between items-center shrink-0 z-30">
             <h1 className="text-xl font-black text-gray-800 tracking-tight">Учет финансов</h1>
-            <button onClick={() => setActiveTab('settings')} className="text-gray-400 p-1"><i className="ph ph-gear-six text-2xl"></i></button>
+            <button onClick={() => setActiveTab('settings')} className={`p-1 transition-colors ${activeTab === 'settings' ? 'text-blue-600' : 'text-gray-400'}`}>
+              <i className="ph ph-gear-six text-2xl font-bold"></i>
+            </button>
           </header>
           
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto pb-24 bg-gray-50">
             {activeTab === 'home' && <Dashboard data={data} stats={stats} actions={actions} />}
-            {activeTab === 'add' && <AddTransaction actions={actions} goals={data.goals} goHome={() => setActiveTab('home')} />}
+            {activeTab === 'add' && <AddTransaction actions={actions} goHome={() => setActiveTab('home')} />}
             {activeTab === 'limits' && <LimitsManager data={data} stats={stats} actions={actions} />}
             {activeTab === 'piggy' && <PiggyBankView data={data} stats={stats} setData={setData} />}
             {activeTab === 'stats' && <StatsView data={data} />}
-            {activeTab === 'settings' && <SettingsView data={data} setFullData={actions.setFullData} />}
+            {activeTab === 'settings' && <SettingsView data={data} actions={actions} setActiveTab={setActiveTab} />}
           </main>
 
-          <nav className="bg-white border-t border-gray-200 flex justify-around p-2 shrink-0 pb-safe shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around p-2 pb-safe z-40 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
             <NavBtn id="home" icon="ph-house" label="Главная" active={activeTab} set={setActiveTab} />
             <NavBtn id="limits" icon="ph-list-numbers" label="Лимиты" active={activeTab} set={setActiveTab} />
             <NavBtn id="add" icon="ph-plus-circle" iconClass="text-3xl text-blue-600" label="Добавить" active={activeTab} set={setActiveTab} />
@@ -99,43 +103,43 @@
 
     function NavBtn({ id, icon, iconClass, label, active, set }) {
       return (
-        <button onClick={() => set(id)} className={`flex flex-col items-center p-2 min-w-[64px] ${active === id ? 'text-blue-600' : 'text-gray-400'}`}>
+        <button onClick={() => set(id)} className={`flex flex-col items-center py-1 px-3 transition-all active:scale-90 ${active === id ? 'text-blue-600' : 'text-gray-400'}`}>
           <i className={`ph ${icon} ${iconClass || "text-2xl"}`}></i>
-          <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">{label}</span>
+          <span className="text-[10px] font-black mt-1 uppercase tracking-tighter">{label}</span>
         </button>
       );
     }
 
     function Dashboard({ data, stats, actions }) {
       return (
-        <div className="p-4 space-y-6 animate-in fade-in duration-300">
+        <div className="p-4 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
               <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Доступно</div>
               <div className={`text-xl font-black ${stats.availableBalance < 0 ? 'text-red-500' : 'text-gray-800'}`}>{stats.availableBalance.toLocaleString()} ₽</div>
             </div>
-            <div className="bg-gradient-to-br from-indigo-600 to-blue-600 p-5 rounded-3xl text-white shadow-lg shadow-indigo-100">
+            <div className="bg-gradient-to-br from-indigo-600 to-blue-600 p-5 rounded-3xl text-white shadow-lg">
               <div className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1">В копилке</div>
               <div className="text-xl font-black">{stats.piggyBalance.toLocaleString()} ₽</div>
             </div>
           </div>
           <div className="space-y-3">
-            <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest ml-1">История</h2>
-            {data.transactions.length === 0 ? <div className="text-center py-10 text-gray-300 font-bold uppercase text-xs">Пусто</div> : 
-              data.transactions.slice(0, 15).map(t => (
-                <div key={t.id} className="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-gray-50">
+            <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">История операций</h2>
+            {data.transactions.length === 0 ? <div className="text-center py-12 text-gray-300 font-bold uppercase text-xs">Нет данных</div> : 
+              data.transactions.slice(0, 20).map(t => (
+                <div key={t.id} className="bg-white p-4 rounded-2xl flex justify-between items-center border border-gray-50 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${t.type === 'income' ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-400'}`}>
-                      <i className={`ph ${t.type === 'income' ? 'ph-trend-up' : 'ph-receipt'} text-xl`}></i>
+                      <i className={`ph ${t.type === 'income' ? 'ph-trend-up' : 'ph-receipt-bold'} text-xl`}></i>
                     </div>
                     <div>
-                      <div className="font-bold text-gray-800 text-sm leading-none mb-1">{t.type === 'income' ? 'Доход' : t.category || 'Транзакция'}</div>
+                      <div className="font-bold text-gray-800 text-sm">{t.type === 'income' ? 'Доход' : t.category || 'Транзакция'}</div>
                       <div className="text-[10px] text-gray-400 font-bold uppercase">{new Date(t.date).toLocaleDateString('ru-RU')}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className={`font-black ${t.type === 'income' ? 'text-green-500' : 'text-gray-900'}`}>{t.type === 'income' ? '+' : '-'}{t.amount} ₽</span>
-                    <button onClick={() => actions.delete(t.id)} className="text-gray-200 hover:text-red-400"><i className="ph ph-trash-simple text-xl"></i></button>
+                    <button onClick={() => actions.delete(t.id)} className="text-gray-200 active:text-red-500 p-1"><i className="ph ph-trash-simple text-xl"></i></button>
                   </div>
                 </div>
               ))
@@ -145,14 +149,14 @@
       );
     }
 
-    function AddTransaction({ actions, goals, goHome }) {
+    function AddTransaction({ actions, goHome }) {
       const [type, setType] = useState('expense');
       const [val, setVal] = useState('');
       const [cat, setCat] = useState(CATEGORIES[0]);
       const [note, setNote] = useState('');
 
       return (
-        <div className="p-4 space-y-6 animate-in slide-in-from-bottom-4 duration-300">
+        <div className="p-4 space-y-6">
           <div className="flex bg-gray-200 p-1 rounded-2xl">
             {['expense', 'income', 'savings_deposit', 'savings_withdrawal'].map(t => (
               <button key={t} onClick={() => setType(t)} className={`flex-1 py-3 text-[9px] font-black uppercase rounded-xl transition-all ${type === t ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}>
@@ -161,13 +165,13 @@
             ))}
           </div>
           <div className="space-y-4">
-            <div className="bg-white p-6 rounded-[32px] shadow-inner border border-gray-100">
-              <label className="block text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Введите сумму</label>
+            <div className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100">
+              <label className="block text-center text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Сумма (₽)</label>
               <input type="number" value={val} onChange={e => setVal(e.target.value)} placeholder="0" className="w-full text-center text-5xl font-black outline-none bg-transparent text-blue-600" inputMode="decimal" autoFocus />
             </div>
-            {type === 'expense' && <select value={cat} onChange={e => setCat(e.target.value)} className="w-full p-5 bg-white rounded-2xl font-bold shadow-sm border-none outline-none">{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select>}
-            <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="Описание (необязательно)" className="w-full p-5 bg-white rounded-2xl font-bold shadow-sm outline-none border-none" />
-            <button onClick={() => { if(val > 0) { actions.add({type, amount: Number(val), category: cat, note}); goHome(); } }} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl shadow-blue-100 uppercase tracking-widest active:scale-95 transition-all">Сохранить</button>
+            {type === 'expense' && <select value={cat} onChange={e => setCat(e.target.value)} className="w-full p-5 bg-white rounded-2xl font-bold border-none shadow-sm">{CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select>}
+            <input type="text" value={note} onChange={e => setNote(e.target.value)} placeholder="Заметка..." className="w-full p-5 bg-white rounded-2xl font-bold shadow-sm border-none outline-none" />
+            <button onClick={() => { if(val > 0) { actions.add({type, amount: Number(val), category: cat, note}); goHome(); } }} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all">СОХРАНИТЬ</button>
           </div>
         </div>
       );
@@ -182,16 +186,16 @@
         const res = {}; CATEGORIES.forEach(c => res[c] = 0);
         data.transactions.filter(t => t.type === 'expense' && t.date.startsWith(currentMonth)).forEach(t => { if(res[t.category] !== undefined) res[t.category] += t.amount });
         return res;
-      }, [data.transactions]);
+      }, [data.transactions, currentMonth]);
 
       return (
-        <div className="p-4 space-y-5 animate-in fade-in duration-300">
+        <div className="p-4 space-y-5">
           <div className="bg-white p-6 rounded-[32px] border border-blue-50 shadow-sm flex justify-between items-center">
             <div>
-              <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Свободно для планов</div>
+              <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Свободно для планирования</div>
               <div className={`text-2xl font-black ${stats.planningBalance < 0 ? 'text-red-500' : 'text-blue-600'}`}>{stats.planningBalance.toLocaleString()} ₽</div>
             </div>
-            <button onClick={() => setModal(true)} className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center active:scale-90 transition-all"><i className="ph ph-arrows-left-right text-2xl"></i></button>
+            <button onClick={() => setModal(true)} className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center active:scale-90"><i className="ph ph-arrows-left-right text-2xl font-bold"></i></button>
           </div>
           <div className="grid gap-4">
             {CATEGORIES.map(c => {
@@ -200,34 +204,34 @@
               return (
                 <div key={c} className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="font-bold text-gray-700 text-xs w-1/2">{c}</span>
+                    <span className="font-bold text-gray-700 text-xs w-1/2 leading-tight">{c}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black text-gray-300 uppercase">{sp} /</span>
-                      <input type="number" value={lim === 0 ? '' : lim} onChange={e => actions.updateLimit(c, e.target.value)} placeholder="0" className="w-20 text-right font-black text-blue-600 bg-gray-50 rounded-lg p-1 outline-none focus:ring-2 focus:ring-blue-100" />
+                      <span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter">{sp} /</span>
+                      <input type="number" value={lim === 0 ? '' : lim} onChange={e => actions.updateLimit(c, e.target.value)} placeholder="0" className="w-20 text-right font-black text-blue-600 bg-gray-50 rounded-lg p-1 outline-none" inputMode="numeric" />
                     </div>
                   </div>
-                  <div className="h-1.5 w-full bg-gray-50 rounded-full overflow-hidden">
-                    <div className={`h-full transition-all duration-1000 ${sp > lim && lim > 0 ? 'bg-red-500' : 'bg-blue-400'}`} style={{ width: `${lim > 0 ? Math.min(100, (sp/lim)*100) : 0}%` }} />
+                  <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
+                    <div className={`h-full transition-all duration-1000 ${sp > lim && lim > 0 ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: `${lim > 0 ? Math.min(100, (sp/lim)*100) : 0}%` }} />
                   </div>
                 </div>
               );
             })}
           </div>
           {modal && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
-            <div className="bg-white rounded-[32px] w-full p-6 space-y-4">
-              <h3 className="font-black text-center uppercase">Перенос лимита</h3>
+            <div className="bg-white rounded-[32px] w-full p-6 space-y-4 shadow-2xl">
+              <h3 className="font-black text-center uppercase tracking-tight">Перенос лимита</h3>
               <select value={transfer.f} onChange={e=>setTransfer({...transfer, f:e.target.value})} className="w-full p-4 bg-gray-50 rounded-xl font-bold border-none">{CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}</select>
               <select value={transfer.t} onChange={e=>setTransfer({...transfer, t:e.target.value})} className="w-full p-4 bg-gray-50 rounded-xl font-bold border-none">{CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}</select>
-              <input type="number" value={transfer.a} onChange={e=>setTransfer({...transfer, a:e.target.value})} className="w-full p-4 bg-blue-50 rounded-xl font-black text-center text-xl" placeholder="0" />
+              <input type="number" value={transfer.a} onChange={e=>setTransfer({...transfer, a:e.target.value})} className="w-full p-4 bg-blue-50 rounded-xl font-black text-center text-xl" placeholder="0" inputMode="numeric" />
               <div className="flex gap-2">
-                <button onClick={()=>setModal(false)} className="flex-1 py-4 font-bold text-gray-400">Отмена</button>
+                <button onClick={()=>setModal(false)} className="flex-1 py-4 font-bold text-gray-400">ОТМЕНА</button>
                 <button onClick={()=>{
                   if(transfer.a > 0 && data.limits[transfer.f] >= transfer.a) {
                     actions.updateLimit(transfer.f, data.limits[transfer.f] - Number(transfer.a));
                     actions.updateLimit(transfer.t, data.limits[transfer.t] + Number(transfer.a));
                     setModal(false); setTransfer({...transfer, a:''});
                   }
-                }} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-black">ОК</button>
+                }} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-black">ПЕРЕНЕСТИ</button>
               </div>
             </div>
           </div>}
@@ -240,20 +244,20 @@
       return (
         <div className="p-4 space-y-6">
           <div className="bg-gradient-to-br from-indigo-700 to-purple-800 p-8 rounded-[40px] text-white shadow-xl text-center relative overflow-hidden">
-            <div className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50 mb-2">Накоплено всего</div>
+            <div className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50 mb-2">Ваши накопления</div>
             <div className="text-4xl font-black tracking-tighter">{stats.piggyBalance.toLocaleString()} ₽</div>
             <i className="ph ph-piggy-bank absolute -right-4 -bottom-4 text-[120px] opacity-10"></i>
           </div>
           <div className="space-y-4">
             <div className="flex gap-2">
-              <input type="text" placeholder="Цель" value={g.n} onChange={e=>setG({...g, n:e.target.value})} className="flex-1 p-4 bg-white border border-gray-100 rounded-2xl font-bold shadow-sm" />
-              <input type="number" placeholder="₽" value={g.t} onChange={e=>setG({...g, t:e.target.value})} className="w-24 p-4 bg-white border border-gray-100 rounded-2xl font-bold shadow-sm" />
-              <button onClick={()=>{ if(g.n && g.t) setData(p=>({...p, goals:[...p.goals, {id:Date.now(), ...g}]})); setG({n:'', t:''}); }} className="bg-indigo-600 text-white w-14 rounded-2xl shadow-lg flex items-center justify-center"><i className="ph ph-plus-bold text-xl"></i></button>
+              <input type="text" placeholder="Цель..." value={g.n} onChange={e=>setG({...g, n:e.target.value})} className="flex-1 p-4 bg-white border border-gray-100 rounded-2xl font-bold shadow-sm outline-none focus:ring-2 focus:ring-indigo-200" />
+              <input type="number" placeholder="₽" value={g.t} onChange={e=>setG({...g, t:e.target.value})} className="w-24 p-4 bg-white border border-gray-100 rounded-2xl font-bold shadow-sm outline-none focus:ring-2 focus:ring-indigo-200" />
+              <button onClick={()=>{ if(g.n && g.t) setData(p=>({...p, goals:[...p.goals, {id:Date.now(), ...g}]})); setG({n:'', t:''}); }} className="bg-indigo-600 text-white w-14 rounded-2xl shadow-lg flex items-center justify-center active:scale-90"><i className="ph ph-plus-bold text-xl"></i></button>
             </div>
             {data.goals.map(x => (
-              <div key={x.id} className="bg-white p-5 rounded-3xl border border-gray-50 flex justify-between items-center">
-                <div><div className="font-black text-[10px] text-gray-400 uppercase mb-1">{x.n}</div><div className="font-black text-indigo-600">{Number(x.t).toLocaleString()} ₽</div></div>
-                <button onClick={()=>setData(p=>({...p, goals:p.goals.filter(y=>y.id!==x.id)}))} className="text-gray-200 hover:text-red-400 p-2 transition-colors"><i className="ph ph-trash-simple text-xl"></i></button>
+              <div key={x.id} className="bg-white p-5 rounded-3xl border border-gray-50 flex justify-between items-center shadow-sm">
+                <div><div className="font-black text-[10px] text-gray-400 uppercase mb-1 tracking-tight">{x.n}</div><div className="font-black text-indigo-600">{Number(x.t).toLocaleString()} ₽</div></div>
+                <button onClick={()=>setData(p=>({...p, goals:p.goals.filter(y=>y.id!==x.id)}))} className="text-gray-200 hover:text-red-400 p-2"><i className="ph ph-trash-simple text-xl font-bold"></i></button>
               </div>
             ))}
           </div>
@@ -270,38 +274,39 @@
       return (
         <div className="p-4 space-y-6">
           <div className="bg-white p-8 rounded-[40px] text-center border border-gray-100 shadow-sm">
-            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Общий расход</div>
+            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Итого расходов</div>
             <div className="text-4xl font-black text-gray-800 tracking-tighter">{total.toLocaleString()} ₽</div>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-5 px-1">
             {chart.map(([name, val]) => (
               <div key={name} className="space-y-2">
-                <div className="flex justify-between text-[10px] font-black uppercase tracking-tight"><span>{name}</span><span>{val.toLocaleString()} ₽</span></div>
-                <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-blue-600 rounded-full" style={{ width: `${(val/total)*100}%` }} /></div>
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-tight"><span>{name}</span><span className="text-gray-900">{val.toLocaleString()} ₽</span></div>
+                <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner"><div className="h-full bg-blue-600 rounded-full" style={{ width: `${(val/total)*100}%` }} /></div>
               </div>
             ))}
+            {chart.length === 0 && <div className="text-center py-20 text-gray-300 font-bold uppercase text-xs tracking-widest">Нет статистики</div>}
           </div>
         </div>
       );
     }
 
-    function SettingsView({ data, setFullData }) {
+    function SettingsView({ data, actions, setActiveTab }) {
       return (
         <div className="p-6 space-y-4">
-          <h2 className="text-xl font-black uppercase tracking-tight mb-6 text-center">Настройки данных</h2>
+          <h2 className="text-xl font-black uppercase tracking-tight mb-6 text-center">Данные и Безопасность</h2>
           <button onClick={() => {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-            const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", `finance_backup_${new Date().toLocaleDateString()}.json`); dl.click();
-          }} className="w-full py-5 bg-white border-2 border-gray-100 rounded-3xl font-black flex items-center justify-center gap-3 active:scale-95 transition-all uppercase text-sm"><i className="ph ph-download-simple text-xl text-blue-600"></i> Создать бэкап</button>
+            const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", `finance_backup.json`); dl.click();
+          }} className="w-full py-5 bg-white border-2 border-gray-100 rounded-3xl font-black flex items-center justify-center gap-3 active:bg-gray-50 transition-all uppercase text-sm"><i className="ph ph-download-simple text-xl text-blue-600"></i> Скачать Бэкап</button>
           
-          <label className="w-full py-5 bg-white border-2 border-gray-100 rounded-3xl font-black flex items-center justify-center gap-3 active:scale-95 transition-all uppercase text-sm cursor-pointer">
-            <i className="ph ph-upload-simple text-xl text-green-600"></i> Восстановить
+          <label className="w-full py-5 bg-white border-2 border-gray-100 rounded-3xl font-black flex items-center justify-center gap-3 active:bg-gray-50 transition-all uppercase text-sm cursor-pointer">
+            <i className="ph ph-upload-simple text-xl text-green-600"></i> Восстановить из файла
             <input type="file" className="hidden" onChange={e => {
-              const r = new FileReader(); r.onload = x => { setFullData(JSON.parse(x.target.result)); alert('Восстановлено!'); }; r.readAsText(e.target.files[0]);
+              const r = new FileReader(); r.onload = x => { actions.setFullData(JSON.parse(x.target.result)); setActiveTab('home'); alert('Данные восстановлены!'); }; r.readAsText(e.target.files[0]);
             }} />
           </label>
           <div className="pt-10">
-            <button onClick={() => { if(confirm('СТЕРЕТЬ ВСЁ?')) { localStorage.clear(); location.reload(); } }} className="w-full py-4 text-red-400 font-bold uppercase text-[10px] tracking-widest">Удалить все данные безвозвратно</button>
+            <button onClick={() => { if(confirm('СТЕРЕТЬ ВСЕ ДАННЫЕ? ЭТО НЕЛЬЗЯ ОТМЕНИТЬ.')) { localStorage.clear(); location.reload(); } }} className="w-full py-4 text-red-300 font-black uppercase text-[10px] tracking-widest active:text-red-500">Удалить базу данных устройства</button>
           </div>
         </div>
       );
